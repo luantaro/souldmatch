@@ -1,34 +1,54 @@
 # SoulMatch Bot 🤖💬
 
-Bot Telegram để kết nối người dùng trò chuyện ẩn danh ngẫu nhiên.
+Bot Telegram để kết nối người dùng trò chuyện ẩn danh ngẫu nhiên với hệ thống bảo vệ toàn diện.
 
 ## ✨ Tính năng
 
-- 🔍 Tìm kiếm người trò chuyện ngẫu nhiên
-- 💬 Trò chuyện ẩn danh 1-1
-- 🚫 Kết thúc cuộc trò chuyện bất cứ lúc nào
-- 🔄 Tìm kiếm người mới sau khi kết thúc
+- 🔍 **Kết nối thông minh**: Tìm kiếm dựa trên giới tính và sở thích
+- 💬 **Trò chuyện ẩn danh**: Chat 1-1 hoàn toàn bảo mật
+- �️ **Bảo vệ trẻ em**: Xác thực tuổi 18+ và lọc nội dung
+- ⚡ **Phản ứng nhanh**: Kết nối tức thì, dễ sử dụng
+- 🔄 **Linh hoạt**: Tìm người mới, thay đổi sở thích
+
+## 🛡️ An toàn & Bảo vệ
+
+### Xác thực tuổi bắt buộc
+- ✅ Yêu cầu xác nhận 18+ trước khi sử dụng
+- ⚖️ Cảnh báo pháp lý rõ ràng về trách nhiệm
+- 🚫 Từ chối dịch vụ cho người chưa đủ tuổi
+
+### Hệ thống lọc nội dung
+- 🤖 Phát hiện tự động ngôn ngữ của trẻ em
+- � Phân tích hành vi nghi ngờ
+- ⚡ Xử lý vi phạm tức thì
+
+### Tuân thủ pháp luật
+- 🇻🇳 Luật Trẻ em Việt Nam 2016
+- 🌍 Tiêu chuẩn quốc tế COPPA, GDPR
+- 📋 Chính sách riêng tư nghiêm ngặt
 
 ## 🚀 Cách sử dụng
 
-1. **Bắt đầu**: `/start` - Chào mừng và hướng dẫn
-2. **Tìm kiếm**: `/find` - Tìm người để trò chuyện
-3. **Trò chuyện**: Gõ tin nhắn bình thường
-4. **Kết thúc**: `/stop` - Dừng cuộc trò chuyện
+1. **Bắt đầu**: `/start` - Đăng ký và xác thực tuổi
+2. **Thiết lập hồ sơ**: Chọn giới tính và sở thích
+3. **Tìm kiếm**: `/find` - Kết nối với người phù hợp
+4. **Trò chuyện**: Nhắn tin tự nhiên
+5. **Kết thúc**: `/stop` - Dừng và tìm người mới
 
 ## 🛠️ Công nghệ
 
-- **Python 3.11+**
+- **Python 3.11+** - Core runtime
 - **aiogram 3.15.0** - Telegram Bot framework
-- **python-dotenv** - Environment variables
-- **Railway** - Cloud deployment
+- **python-dotenv** - Environment management
+- **Railway** - Cloud deployment platform
+- **Smart Matching** - Thuật toán ghép đôi thông minh
 
 ## 📦 Cài đặt local
 
 ### Yêu cầu
 
 - Python 3.11+
-- Telegram Bot Token
+- Telegram Bot Token (từ @BotFather)
 
 ### Bước 1: Clone repository
 
@@ -121,6 +141,34 @@ souldmatch/
 - Kiểm tra Procfile và requirements.txt
 - Đảm bảo environment variables đã được set
 - Xem logs trên Railway dashboard
+
+## 📚 Tài liệu
+
+- **[CHILD_PROTECTION.md](./CHILD_PROTECTION.md)** - Hệ thống bảo vệ trẻ em
+- **[DEPLOY.md](./DEPLOY.md)** - Hướng dẫn deployment và pháp lý
+
+## ⚖️ Lưu ý pháp lý
+
+- 🔞 **Chỉ dành cho người từ 18 tuổi trở lên**
+- 📋 Tuân thủ Luật Trẻ em Việt Nam 2016
+- 🛡️ Bảo vệ dữ liệu theo GDPR và luật Việt Nam
+- 📞 Báo cáo vi phạm: safety@soulmatch.vn
+
+## 🤝 Đóng góp
+
+1. Fork repository
+2. Tạo feature branch
+3. Commit changes
+4. Push to branch  
+5. Tạo Pull Request
+
+## 📄 License
+
+Dự án này được bảo vệ bởi luật sở hữu trí tuệ. Việc sử dụng phải tuân thủ các điều khoản và điều kiện.
+
+---
+
+**⚠️ Cảnh báo**: Dự án này chỉ dành cho mục đích giáo dục và phát triển. Việc triển khai thương mại cần tuân thủ đầy đủ quy định pháp luật về bảo vệ trẻ em và quyền riêng tư.
 
 ## 📝 License
 

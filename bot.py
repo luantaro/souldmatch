@@ -25,6 +25,83 @@ waiting_users = {
 }
 connections = {}
 
+# Content filtering để phát hiện trẻ em
+MINOR_KEYWORDS = [
+    "học sinh", "lớp 12", "lớp 11", "lớp 10", "lớp 9", "trường", "học bài",
+    "bài tập", "kiểm tra", "thi cử", "phụ huynh", "bố mẹ", "ba má", 
+    "cấp 3", "cấp 2", "thcs", "thpt", "đại học sắp thi", "tốt nghiệp",
+    "em mới", "em còn nhỏ", "tuổi teen", "chưa 18", "17 tuổi", "16 tuổi", "15 tuổi"
+]
+
+async def check_minor_behavior(message_text, user_id):
+    """Phát hiện hành vi nghi ngờ trẻ em"""
+    if not message_text:
+        return False
+        
+    text_lower = message_text.lower()
+    violations = 0
+    
+    for keyword in MINOR_KEYWORDS:
+        if keyword in text_lower:
+            violations += 1
+    
+    if violations >= 2:  # Nghi ngờ nếu match nhiều keyword
+        await handle_minor_detection(user_id)
+        return True
+    
+    return False
+
+async def handle_minor_detection(user_id):
+    """Xử lý khi phát hiện nghi ngờ trẻ em"""
+    try:
+        await bot.send_message(
+            user_id,
+            "🚫 **TÀI KHOẢN BỊ ĐÌNH CHỈ**\n\n"
+            "⚠️ **Lý do:** Hệ thống phát hiện dấu hiệu bạn chưa đủ 18 tuổi\n\n"
+            "📋 **Thông tin:**\n"
+            "• SoulMatch chỉ dành cho người từ 18+ tuổi\n"
+            "• Việc khai báo sai tuổi vi phạm điều khoản sử dụng\n"
+            "• Tài khoản đã bị khóa vĩnh viễn\n\n"
+            "📚 **Lời khuyên:**\n"
+            "• Sử dụng app phù hợp với độ tuổi của bạn\n"
+            "• Tập trung vào học tập và phát triển bản thân\n"
+            "• Kết bạn trong môi trường an toàn\n\n"
+            "🔒 **Quyết định này là cuối cùng và không thể thay đổi.**",
+            parse_mode='Markdown'
+        )
+    except:
+        pass  # User có thể đã block bot
+    
+    # Xóa user khỏi hệ thống
+    if user_id in users:
+        user = users[user_id]
+        # Ngắt kết nối nếu đang chat
+        if user.partner_id:
+            partner_id = user.partner_id
+            try:
+                await bot.send_message(
+                    partner_id, 
+                    "⚠️ **Cuộc trò chuyện đã kết thúc**\n\n"
+                    "Người kia đã vi phạm điều khoản sử dụng và bị cấm tài khoản.\n"
+                    "Vui lòng tìm kiếm người khác để trò chuyện."
+                )
+            except:
+                pass
+            
+            users[partner_id].partner_id = None
+            if partner_id in connections:
+                del connections[partner_id]
+        
+        # Xóa khỏi waiting queue
+        for queue in waiting_users.values():
+            if user_id in queue:
+                queue.remove(user_id)
+        
+        # Xóa user
+        del users[user_id]
+        if user_id in connections:
+            del connections[user_id]
+
 class User:
     def __init__(self, user_id):
         self.user_id = user_id
@@ -32,6 +109,15 @@ class User:
         self.seeking = None
         self.partner_id = None
         self.is_registered = False
+        self.age_verified = False  # Thêm trường xác minh tuổi
+
+def get_age_verification_keyboard():
+    """Keyboard cho xác minh tuổi"""
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="✅ Tôi đã đủ 18 tuổi", callback_data="age_verified")],
+        [InlineKeyboardButton(text="❌ Tôi chưa đủ 18 tuổi", callback_data="age_under")]
+    ])
+    return keyboard
 
 def get_gender_keyboard():
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
@@ -82,6 +168,32 @@ async def cmd_start(message: types.Message):
     
     user = users[user_id]
     
+    if not user.age_verified:
+        # Age verification TRƯỚC mọi thứ
+        age_warning = (
+            "⚠️ **KIỂM TRA TUỔI**\n\n"
+            "🔞 **SoulMatch chỉ dành cho người ĐỦ 18 TUỔI TRỞ LÊN**\n\n"
+            "⚖️ **QUAN TRỌNG:**\n"
+            "• Khai báo sai tuổi vi phạm pháp luật Việt Nam\n"
+            "• Chúng tôi sẽ kiểm tra và cấm tài khoản gian lận\n"
+            "• Trẻ em vui lòng không sử dụng dịch vụ này\n"
+            "• Báo cáo ngay cho phụ huynh nếu phát hiện vi phạm\n\n"
+            "🛡️ **CAM KẾT CỦA BẠN:**\n"
+            "Bằng cách tiếp tục, bạn xác nhận:\n"
+            "✅ Bạn đã đủ 18 tuổi theo pháp luật\n"
+            "✅ Hiểu rủi ro khi chat với người lạ\n"
+            "✅ Chịu trách nhiệm về hành vi của mình\n"
+            "✅ Tuân thủ các quy định của platform\n\n"
+            "❓ **Bạn có đủ 18 tuổi không?**"
+        )
+        
+        await message.answer(
+            age_warning,
+            reply_markup=get_age_verification_keyboard(),
+            parse_mode='Markdown'
+        )
+        return
+    
     if not user.is_registered:
         # Tin nhắn chào mừng với giới thiệu chi tiết
         welcome_text = (
@@ -116,6 +228,85 @@ async def cmd_start(message: types.Message):
             reply_markup=get_main_menu_keyboard(),
             parse_mode='Markdown'
         )
+
+@dp.callback_query(lambda c: c.data == 'age_verified')
+async def age_verified(callback_query: CallbackQuery):
+    """Xử lý khi user xác nhận đủ 18 tuổi"""
+    user_id = callback_query.from_user.id
+    user = users[user_id]
+    user.age_verified = True
+    
+    # Legal disclaimer mạnh mẽ
+    legal_disclaimer = (
+        "⚖️ **TUYÊN BỐ PHÁP LÝ**\n\n"
+        "🔞 **Xác nhận tuổi:** Bạn đã cam kết mình đủ 18 tuổi\n\n"
+        "🚫 **VI PHẠM SẼ BỊ:**\n"
+        "• Cấm tài khoản vĩnh viễn\n"
+        "• Báo cáo cho cơ quan chức năng\n"
+        "• Truy cứu trách nhiệm pháp lý\n\n"
+        "⚠️ **NGƯỜI DÙNG CHỊU TRÁCH NHIỆM:**\n"
+        "• Tự bảo vệ thông tin cá nhân\n"
+        "• Không gặp mặt người lạ một mình\n"
+        "• Báo cáo hành vi đáng ngờ ngay lập tức\n"
+        "• Không chia sẻ nội dung không phù hợp\n\n"
+        "📞 **LIÊN HỆ KHẨN CẤP:**\n"
+        "Báo ngay cho phụ huynh/cơ quan chức năng nếu gặp vấn đề\n\n"
+        "🎭 **Bây giờ, chào mừng đến với SoulMatch!**"
+    )
+    
+    await callback_query.message.edit_text(
+        legal_disclaimer,
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🎯 Tôi hiểu và đồng ý", callback_data="legal_accepted")]
+        ]),
+        parse_mode='Markdown'
+    )
+
+@dp.callback_query(lambda c: c.data == 'age_under')
+async def age_under(callback_query: CallbackQuery):
+    """Xử lý khi user chưa đủ 18 tuổi"""
+    await callback_query.message.edit_text(
+        "🚫 **XIN LỖI!**\n\n"
+        "SoulMatch chỉ dành cho người từ **18 tuổi trở lên**.\n\n"
+        "📚 **GIAO HẸNTHÀNH ANH EM:**\n"
+        "• Tập trung vào học tập và phát triển bản thân\n"
+        "• Tham gia hoạt động lành mạnh phù hợp tuổi\n"
+        "• Kết bạn trong môi trường an toàn (trường học, gia đình)\n"
+        "• Chờ đến khi đủ 18 tuổi để sử dụng các dịch vụ này\n\n"
+        "🌟 **Chúc bạn:**\n"
+        "• Học tập tốt và đạt được ước mơ\n"
+        "• Phát triển toàn diện và lành mạnh\n"
+        "• Có những trải nghiệm tuyệt vời phù hợp với tuổi\n\n"
+        "🔒 **Tài khoản này đã bị khóa vì vi phạm độ tuổi.**",
+        parse_mode='Markdown'
+    )
+
+@dp.callback_query(lambda c: c.data == 'legal_accepted')
+async def legal_accepted(callback_query: CallbackQuery):
+    """Sau khi user đồng ý các điều khoản pháp lý"""
+    # Hiển thị welcome message như ban đầu
+    welcome_text = (
+        "🎭 **CHÀO MỪNG ĐẾN VỚI SOULMATCH!**\n\n"
+        "✨ **Trò chuyện ẩn danh - Kết nối tâm hồn**\n\n"
+        "🔥 **Tính năng nổi bật:**\n"
+        "• 🎯 **Smart Matching** - Tìm người phù hợp theo sở thích\n"
+        "• 🔐 **100% Ẩn danh** - Không lưu thông tin cá nhân\n"
+        "• 💬 **Chat tức thì** - Kết nối ngay lập tức\n"
+        "• 🌈 **Đa dạng** - Hỗ trợ mọi giới tính & sở thích\n"
+        "• 🚫 **An toàn** - Có thể dừng chat bất cứ lúc nào\n\n"
+        "🎲 **Cách hoạt động:**\n"
+        "1️⃣ Chọn giới tính của bạn\n"
+        "2️⃣ Chọn đối tượng muốn trò chuyện\n" 
+        "3️⃣ Hệ thống tự động ghép đôi\n"
+        "4️⃣ Bắt đầu trò chuyện ẩn danh!\n\n"
+        "🔒 **Cam kết:** Hoàn toàn miễn phí và bảo mật!"
+    )
+    
+    await callback_query.message.edit_text(
+        welcome_text,
+        reply_markup=get_intro_keyboard(),
+        parse_mode='Markdown'
+    )
 
 @dp.callback_query(lambda c: c.data == 'start_register')
 async def start_register(callback_query: CallbackQuery):
@@ -337,6 +528,14 @@ async def process_find(message: types.Message):
     
     user = users[user_id]
     
+    # Kiểm tra age verification
+    if not user.age_verified:
+        await message.answer(
+            "❌ Bạn cần xác nhận tuổi trước khi sử dụng dịch vụ.",
+            reply_markup=get_age_verification_keyboard()
+        )
+        return
+    
     if user.partner_id:
         await message.answer("❌ Bạn đang trong cuộc trò chuyện!")
         return
@@ -502,6 +701,15 @@ async def handle_message(message: types.Message):
         return
     
     user = users[user_id]
+    
+    # Kiểm tra age verification
+    if not user.age_verified:
+        await message.answer("❌ Bạn cần xác nhận tuổi trước khi sử dụng dịch vụ.")
+        return
+    
+    # Kiểm tra content filtering cho trẻ em
+    if message.text and await check_minor_behavior(message.text, user_id):
+        return  # Đã bị chặn, không xử lý tiếp
     
     if not user.partner_id:
         await message.answer("❌ Bạn chưa được kết nối với ai. Gõ /find để tìm kiếm!")
