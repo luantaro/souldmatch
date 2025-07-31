@@ -26,32 +26,39 @@ Bot Telegram để kết nối người dùng trò chuyện ẩn danh ngẫu nhi
 ## 📦 Cài đặt local
 
 ### Yêu cầu
+
 - Python 3.11+
 - Telegram Bot Token
 
 ### Bước 1: Clone repository
+
 ```bash
 git clone <repository-url>
 cd souldmatch
 ```
 
 ### Bước 2: Cài đặt dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### Bước 3: Cấu hình environment
+
 Tạo file `.env`:
+
 ```
 TOKEN=your_telegram_bot_token_here
 ```
 
 ### Bước 4: Chạy bot
+
 ```bash
 python bot.py
 ```
 
 Hoặc dùng file batch:
+
 ```bash
 run_bot.bat
 ```
@@ -61,6 +68,7 @@ run_bot.bat
 Xem hướng dẫn chi tiết trong [DEPLOY.md](DEPLOY.md)
 
 ### Nhanh chóng:
+
 1. Fork/clone repository này
 2. Tạo project mới trên [Railway](https://railway.app)
 3. Kết nối với GitHub repository
@@ -86,9 +94,11 @@ souldmatch/
 ## 🔧 Cấu hình
 
 ### Environment Variables
+
 - `TOKEN`: Telegram Bot Token (bắt buộc)
 
 ### Bot Commands
+
 - `/start` - Bắt đầu và hiển thị hướng dẫn
 - `/find` - Tìm kiếm người trò chuyện
 - `/stop` - Kết thúc cuộc trò chuyện hiện tại
@@ -96,15 +106,18 @@ souldmatch/
 ## 🐛 Troubleshooting
 
 ### Bot không phản hồi:
+
 - Kiểm tra TOKEN có đúng không
 - Đảm bảo bot đã được start với BotFather
 - Xem logs để tìm lỗi
 
 ### Lỗi khi cài đặt:
+
 - Cập nhật pip: `pip install --upgrade pip`
 - Dùng Python 3.11+ thay vì 3.13 nếu có lỗi build
 
 ### Deployment issues:
+
 - Kiểm tra Procfile và requirements.txt
 - Đảm bảo environment variables đã được set
 - Xem logs trên Railway dashboard
