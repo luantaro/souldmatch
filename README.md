@@ -13,16 +13,19 @@ Bot Telegram để kết nối người dùng trò chuyện ẩn danh ngẫu nhi
 ## 🛡️ An toàn & Bảo vệ
 
 ### Xác thực tuổi bắt buộc
+
 - ✅ Yêu cầu xác nhận 18+ trước khi sử dụng
 - ⚖️ Cảnh báo pháp lý rõ ràng về trách nhiệm
 - 🚫 Từ chối dịch vụ cho người chưa đủ tuổi
 
 ### Hệ thống lọc nội dung
+
 - 🤖 Phát hiện tự động ngôn ngữ của trẻ em
 - � Phân tích hành vi nghi ngờ
 - ⚡ Xử lý vi phạm tức thì
 
 ### Tuân thủ pháp luật
+
 - 🇻🇳 Luật Trẻ em Việt Nam 2016
 - 🌍 Tiêu chuẩn quốc tế COPPA, GDPR
 - 📋 Chính sách riêng tư nghiêm ngặt
@@ -159,7 +162,7 @@ souldmatch/
 1. Fork repository
 2. Tạo feature branch
 3. Commit changes
-4. Push to branch  
+4. Push to branch
 5. Tạo Pull Request
 
 ## 📄 License

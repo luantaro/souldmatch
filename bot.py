@@ -419,6 +419,20 @@ async def back_to_intro(callback_query: CallbackQuery):
 @dp.callback_query(lambda c: c.data.startswith('gender_'))
 async def process_gender(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
+    
+    # Kiểm tra user tồn tại, tạo mới nếu cần
+    if user_id not in users:
+        users[user_id] = User(user_id)
+        # Redirect về /start nếu user không tồn tại
+        await callback_query.message.edit_text(
+            "❌ **Phiên làm việc đã hết hạn**\n\n"
+            "Vui lòng bắt đầu lại từ đầu:",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🔄 Bắt đầu lại", callback_data="restart_bot")]
+            ])
+        )
+        return
+    
     user = users[user_id]
     
     gender_map = {
@@ -440,6 +454,19 @@ async def process_gender(callback_query: CallbackQuery):
 @dp.callback_query(lambda c: c.data.startswith('seek_'))
 async def process_seeking(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
+    
+    # Kiểm tra user tồn tại
+    if user_id not in users:
+        users[user_id] = User(user_id)
+        await callback_query.message.edit_text(
+            "❌ **Phiên làm việc đã hết hạn**\n\n"
+            "Vui lòng bắt đầu lại:",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🔄 Bắt đầu lại", callback_data="restart_bot")]
+            ])
+        )
+        return
+    
     user = users[user_id]
     
     seeking_map = {
@@ -678,6 +705,16 @@ async def change_seeking(callback_query: CallbackQuery):
         "🔍 Bạn muốn trò chuyện với:",
         reply_markup=get_seeking_keyboard()
     )
+
+@dp.callback_query(lambda c: c.data == 'restart_bot')
+async def restart_bot(callback_query: CallbackQuery):
+    """Restart bot khi có lỗi session"""
+    await callback_query.message.edit_text(
+        "🔄 **Đang khởi động lại...**\n\n"
+        "Vui lòng chờ trong giây lát..."
+    )
+    # Gọi lại cmd_start
+    await cmd_start(callback_query.message)
 
 @dp.callback_query(lambda c: c.data == 'back_menu')
 async def back_menu(callback_query: CallbackQuery):
