@@ -7,6 +7,7 @@ SoulMatch triển khai **3-layer protection system** với tuyên bố miễn tr
 ## 🔄 QUY TRÌNH XÁC THỰC 3 BƯỚC
 
 ### **BƯỚC 1: AGE VERIFICATION** 🔞
+
 ```
 /start → Age Check → 18+ Required
 ├── ✅ Đủ 18 tuổi → Tiếp tục
@@ -14,6 +15,7 @@ SoulMatch triển khai **3-layer protection system** với tuyên bố miễn tr
 ```
 
 ### **BƯỚC 2: LEGAL DISCLAIMER** ⚖️
+
 ```
 Age Verified → Legal Warning → Criminal Liability
 ├── ✅ Hiểu và đồng ý → Tiếp tục
@@ -21,6 +23,7 @@ Age Verified → Legal Warning → Criminal Liability
 ```
 
 ### **BƯỚC 3: LIABILITY WAIVER** 🛡️
+
 ```
 Legal Accepted → Comprehensive Disclaimer → Full Protection
 ├── ✅ Đồng ý miễn trừ → Cho phép sử dụng
@@ -30,12 +33,14 @@ Legal Accepted → Comprehensive Disclaimer → Full Protection
 ## 📋 NỘI DUNG DISCLAIMER
 
 ### 🚫 **MIỄN TRỪ TRÁCH NHIỆM TOÀN DIỆN:**
+
 - SoulMatch KHÔNG chịu trách nhiệm về bất kỳ thiệt hại nào
 - Mọi rủi ro từ việc sử dụng dịch vụ thuộc về người dùng
 - Platform chỉ là trung gian kết nối, không can thiệp nội dung
 - Không bảo đảm về tính chính xác thông tin từ người dùng khác
 
 ### 💔 **THIỆT HẠI KHÔNG CHỊU TRÁCH NHIỆM:**
+
 - Lừa đảo, quấy rối từ người dùng khác
 - Thiệt hại tinh thần, tài chính, danh tiếng
 - Hậu quả từ việc gặp mặt ngoài đời
@@ -43,24 +48,29 @@ Legal Accepted → Comprehensive Disclaimer → Full Protection
 - Nội dung không phù hợp từ người khác
 
 ### 🛡️ **TRÁCH NHIỆM CỦA NGƯỜI DÙNG:**
+
 - Tự bảo vệ thông tin cá nhân
 - Đánh giá rủi ro trước khi hành động
 - Tuân thủ pháp luật trong mọi hoạt động
 - Chịu trách nhiệm về mọi hậu quả
 
 ### ⚠️ **CẢNH BÁO ĐẶC BIỆT:**
+
 - TUYỆT ĐỐI không gặp mặt người lạ một mình
 - KHÔNG chia sẻ thông tin tài chính
 - CẢNH GIÁC với yêu cầu chuyển tiền
 - BÁO CÁO ngay hành vi đáng ngờ
 
 ### 📞 **KHẨN CẤP:**
+
 - Gọi 113 (Cảnh sát) nếu gặp nguy hiểm
 - Liên hệ gia đình/bạn bè khi cần thiết
 - Sử dụng các dịch vụ hỗ trợ chính thức
 
 ## 🔒 **XÁC NHẬN CUỐI CÙNG:**
+
 Bằng cách nhấn 'Đồng ý', user xác nhận:
+
 - ✅ Đã đọc và hiểu toàn bộ điều khoản
 - ✅ Chấp nhận mọi rủi ro khi sử dụng
 - ✅ Tự chịu trách nhiệm về hành vi của mình
@@ -69,17 +79,20 @@ Bằng cách nhấn 'Đồng ý', user xác nhận:
 ## 🛡️ **BẢO VỆ PHÁP LÝ**
 
 ### **COVERAGE 95%+**
+
 - **Contract Law**: Express agreement từ user
 - **Tort Law**: Liability waiver comprehensive
 - **Criminal Law**: Platform không faciliate crime
 - **Civil Law**: Damages limitation clause
 
 ### **ENFORCEMENT MECHANISMS**
+
 - **Technical**: Không thể bypass disclaimer
 - **Legal**: Documented consent với timestamp
 - **Practical**: Clear warnings ở mọi step
 
 ### **COMPLIANCE**
+
 - **Vietnamese Law**: Nghị định 15/2020
 - **International**: GDPR Article 7 (Consent)
 - **Platform**: Telegram ToS alignment
@@ -87,6 +100,7 @@ Bằng cách nhấn 'Đồng ý', user xác nhận:
 ## 🚨 **HANDLING REJECTION**
 
 ### **Nếu user từ chối disclaimer:**
+
 ```
 Disclaimer Rejected → Permanent Ban
 ├── 🚫 Không thể sử dụng dịch vụ
@@ -96,6 +110,7 @@ Disclaimer Rejected → Permanent Ban
 ```
 
 ### **Message template:**
+
 ```
 🚫 KHÔNG THỂ SỬ DỤNG DỊCH VỤ
 
@@ -113,22 +128,25 @@ chúng tôi không thể cung cấp dịch vụ.
 ## 📊 **METRICS & VALIDATION**
 
 ### **Success Metrics:**
+
 - **100%** users phải accept disclaimer
 - **0%** bypass possibilities
 - **Full** legal documentation
 - **Real-time** consent recording
 
 ### **Technical Implementation:**
+
 ```python
 class User:
     disclaimer_accepted: bool = False  # Required field
-    
+
 # Validation ở mọi interaction:
 if not user.disclaimer_accepted:
     return reject_access()
 ```
 
 ### **Legal Proof:**
+
 - User ID + Timestamp của acceptance
 - Full disclaimer text version
 - IP address (nếu cần)
@@ -137,18 +155,21 @@ if not user.disclaimer_accepted:
 ## 🎯 **BUSINESS IMPACT**
 
 ### **Risk Reduction:**
+
 - **90%+** liability protection
 - **Comprehensive** coverage
 - **Proactive** risk management
 - **Industry standard** approach
 
 ### **User Experience:**
+
 - **Clear** communication
 - **Informed** consent
 - **Professional** presentation
 - **Trust** building
 
 ### **Competitive Advantage:**
+
 - **Legal compliance** superior
 - **Professional** approach
 - **User safety** prioritized
@@ -157,18 +178,21 @@ if not user.disclaimer_accepted:
 ## 📈 **RECOMMENDATIONS**
 
 ### **Immediate (Completed):**
+
 - ✅ 3-layer protection implemented
 - ✅ Comprehensive disclaimer
 - ✅ Technical enforcement
 - ✅ Clear user communication
 
 ### **Near Term:**
+
 - 📊 Usage analytics tracking
 - 📋 Legal review with attorney
 - 🔍 User feedback collection
 - 📱 Mobile-optimized display
 
 ### **Long Term:**
+
 - 🤖 AI-powered risk assessment
 - 📊 Advanced user behavior analytics
 - 🌍 Multi-language disclaimer
@@ -193,7 +217,7 @@ SoulMatch hiện có **hệ thống bảo vệ pháp lý toàn diện nhất** t
 
 ---
 
-*Tài liệu này được cập nhật theo luật pháp Việt Nam và quốc tế mới nhất.*
+_Tài liệu này được cập nhật theo luật pháp Việt Nam và quốc tế mới nhất._
 
 **Version**: 1.0  
 **Last Updated**: $(Get-Date -Format "dd/MM/yyyy")  
