@@ -110,6 +110,7 @@ class User:
         self.partner_id = None
         self.is_registered = False
         self.age_verified = False  # Thêm trường xác minh tuổi
+        self.disclaimer_accepted = False  # Thêm trường xác nhận disclaimer
 
 def get_age_verification_keyboard():
     """Keyboard cho xác minh tuổi"""
@@ -156,6 +157,14 @@ def get_features_keyboard():
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🚀 Bắt đầu ngay", callback_data="start_register")],
         [InlineKeyboardButton(text="🔒 Chính sách bảo mật", callback_data="privacy_policy")]
+    ])
+    return keyboard
+
+def get_disclaimer_keyboard():
+    """Keyboard cho tuyên bố miễn trừ trách nhiệm"""
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="✅ Tôi đã đọc và đồng ý với mọi điều khoản", callback_data="disclaimer_accepted")],
+        [InlineKeyboardButton(text="❌ Tôi không đồng ý", callback_data="disclaimer_rejected")]
     ])
     return keyboard
 
@@ -283,10 +292,69 @@ async def age_under(callback_query: CallbackQuery):
 
 @dp.callback_query(lambda c: c.data == 'legal_accepted')
 async def legal_accepted(callback_query: CallbackQuery):
-    """Sau khi user đồng ý các điều khoản pháp lý"""
-    # Hiển thị welcome message như ban đầu
+    """Sau khi user đồng ý các điều khoản pháp lý, hiển thị disclaimer"""
+    disclaimer_text = (
+        "📋 **TUYÊN BỐ MIỄN TRỪ TRÁCH NHIỆM**\n\n"
+        "⚖️ **BẰNG CÁCH SỬ DỤNG SOULMATCH, BẠN ĐỒNG Ý:**\n\n"
+        
+        "🚫 **MIỄN TRỪ TRÁCH NHIỆM TOÀN DIỆN:**\n"
+        "• SoulMatch KHÔNG chịu trách nhiệm về bất kỳ thiệt hại nào\n"
+        "• Mọi rủi ro từ việc sử dụng dịch vụ thuộc về người dùng\n"
+        "• Platform chỉ là trung gian kết nối, không can thiệp nội dung\n"
+        "• Không bảo đảm về tính chính xác thông tin từ người dùng khác\n\n"
+        
+        "� **THIỆT HẠI KHÔNG CHỊU TRÁCH NHIỆM:**\n"
+        "• Lừa đảo, quấy rối từ người dùng khác\n"
+        "• Thiệt hại tinh thần, tài chính, danh tiếng\n"
+        "• Hậu quả từ việc gặp mặt ngoài đời\n"
+        "• Mất mát do chia sẻ thông tin cá nhân\n"
+        "• Nội dung không phù hợp từ người khác\n\n"
+        
+        "�️ **TRÁCH NHIỆM CỦA NGƯỜI DÙNG:**\n"
+        "• Tự bảo vệ thông tin cá nhân\n"
+        "• Đánh giá rủi ro trước khi hành động\n"
+        "• Tuân thủ pháp luật trong mọi hoạt động\n"
+        "• Chịu trách nhiệm về mọi hậu quả\n\n"
+        
+        "⚠️ **CẢNH BÁO ĐẶC BIỆT:**\n"
+        "• TUYỆT ĐỐI không gặp mặt người lạ một mình\n"
+        "• KHÔNG chia sẻ thông tin tài chính\n"
+        "• CẢNH GIÁC với yêu cầu chuyển tiền\n"
+        "• BÁO CÁO ngay hành vi đáng ngờ\n\n"
+        
+        "📞 **KHẨN CẤP:**\n"
+        "• Gọi 113 (Cảnh sát) nếu gặp nguy hiểm\n"
+        "• Liên hệ gia đình/bạn bè khi cần thiết\n"
+        "• Sử dụng các dịch vụ hỗ trợ chính thức\n\n"
+        
+        "🔒 **XÁC NHẬN CUỐI CÙNG:**\n"
+        "Bằng cách nhấn 'Đồng ý', bạn xác nhận:\n"
+        "✅ Đã đọc và hiểu toàn bộ điều khoản\n"
+        "✅ Chấp nhận mọi rủi ro khi sử dụng\n"
+        "✅ Tự chịu trách nhiệm về hành vi của mình\n"
+        "✅ Miễn trừ mọi trách nhiệm cho SoulMatch\n\n"
+        
+        "❓ **Bạn có đồng ý với tất cả điều khoản trên?**"
+    )
+    
+    await callback_query.message.edit_text(
+        disclaimer_text,
+        reply_markup=get_disclaimer_keyboard(),
+        parse_mode='Markdown'
+    )
+
+@dp.callback_query(lambda c: c.data == 'disclaimer_accepted')
+async def disclaimer_accepted(callback_query: CallbackQuery):
+    """Sau khi user đồng ý disclaimer, cho phép truy cập"""
+    user_id = callback_query.from_user.id
+    user = users[user_id]
+    
+    # Đánh dấu user đã hoàn thành mọi bước xác thực
+    user.disclaimer_accepted = True
+    
+    # Hiển thị welcome message cuối cùng
     welcome_text = (
-        "🎭 **CHÀO MỪNG ĐẾN VỚI SOULMATCH!**\n\n"
+        "🎉 **CHÀO MỪNG ĐẾN VỚI SOULMATCH!**\n\n"
         "✨ **Trò chuyện ẩn danh - Kết nối tâm hồn**\n\n"
         "🔥 **Tính năng nổi bật:**\n"
         "• 🎯 **Smart Matching** - Tìm người phù hợp theo sở thích\n"
@@ -299,7 +367,8 @@ async def legal_accepted(callback_query: CallbackQuery):
         "2️⃣ Chọn đối tượng muốn trò chuyện\n" 
         "3️⃣ Hệ thống tự động ghép đôi\n"
         "4️⃣ Bắt đầu trò chuyện ẩn danh!\n\n"
-        "🔒 **Cam kết:** Hoàn toàn miễn phí và bảo mật!"
+        "🔒 **Bạn đã hoàn tất mọi bước xác thực!**\n"
+        "Giờ đây có thể sử dụng an toàn và có trách nhiệm."
     )
     
     await callback_query.message.edit_text(
@@ -308,9 +377,43 @@ async def legal_accepted(callback_query: CallbackQuery):
         parse_mode='Markdown'
     )
 
+@dp.callback_query(lambda c: c.data == 'disclaimer_rejected')
+async def disclaimer_rejected(callback_query: CallbackQuery):
+    """Khi user không đồng ý disclaimer"""
+    await callback_query.message.edit_text(
+        "🚫 **KHÔNG THỂ SỬ DỤNG DỊCH VỤ**\n\n"
+        "Do bạn không đồng ý với các điều khoản miễn trừ trách nhiệm,\n"
+        "chúng tôi không thể cung cấp dịch vụ.\n\n"
+        "📋 **Lý do:**\n"
+        "• Việc đồng ý với điều khoản là bắt buộc\n"
+        "• Đây là yêu cầu pháp lý để bảo vệ cả hai bên\n"
+        "• Không có ngoại lệ cho quy định này\n\n"
+        "💡 **Gợi ý:**\n"
+        "• Đọc kỹ điều khoản và cân nhắc lại\n"
+        "• Tìm hiểu về các rủi ro và cách phòng tránh\n"
+        "• Sử dụng các dịch vụ khác phù hợp hơn\n\n"
+        "🔒 **Truy cập bị từ chối vĩnh viễn.**",
+        parse_mode='Markdown'
+    )
 @dp.callback_query(lambda c: c.data == 'start_register')
 async def start_register(callback_query: CallbackQuery):
-    """Bắt đầu quá trình đăng ký"""
+    """Bắt đầu quá trình đăng ký - kiểm tra disclaimer trước"""
+    user_id = callback_query.from_user.id
+    user = users[user_id]
+    
+    # Kiểm tra disclaimer đã được accept chưa
+    if not hasattr(user, 'disclaimer_accepted') or not user.disclaimer_accepted:
+        await callback_query.message.edit_text(
+            "❌ **CHƯA HOÀN TẤT XÁC THỰC**\n\n"
+            "Bạn cần đồng ý với tuyên bố miễn trừ trách nhiệm trước khi đăng ký.\n\n"
+            "Vui lòng quay lại và hoàn tất các bước xác thực.",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🔄 Quay lại xác thực", callback_data="restart_bot")]
+            ])
+        )
+        return
+    
+    # Nếu đã accept disclaimer, cho phép đăng ký
     await callback_query.message.edit_text(
         "🎯 **ĐĂNG KÝ HỒ SƠ**\n\n"
         "Để tìm được người phù hợp nhất, hãy cho tôi biết giới tính của bạn:\n\n"
@@ -563,6 +666,14 @@ async def process_find(message: types.Message):
         )
         return
     
+    # Kiểm tra disclaimer acceptance
+    if not hasattr(user, 'disclaimer_accepted') or not user.disclaimer_accepted:
+        await message.answer(
+            "❌ Bạn cần đồng ý với tuyên bố miễn trừ trách nhiệm trước khi sử dụng dịch vụ.\n"
+            "Gõ /start để hoàn tất các bước xác thực."
+        )
+        return
+    
     if user.partner_id:
         await message.answer("❌ Bạn đang trong cuộc trò chuyện!")
         return
@@ -742,6 +853,11 @@ async def handle_message(message: types.Message):
     # Kiểm tra age verification
     if not user.age_verified:
         await message.answer("❌ Bạn cần xác nhận tuổi trước khi sử dụng dịch vụ.")
+        return
+    
+    # Kiểm tra disclaimer acceptance
+    if not hasattr(user, 'disclaimer_accepted') or not user.disclaimer_accepted:
+        await message.answer("❌ Bạn cần đồng ý với tuyên bố miễn trừ trách nhiệm trước khi sử dụng dịch vụ.")
         return
     
     # Kiểm tra content filtering cho trẻ em
