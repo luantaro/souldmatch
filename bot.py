@@ -581,6 +581,10 @@ async def process_seeking(callback_query: CallbackQuery):
     user.seeking = seeking_map[callback_query.data]
     user.is_registered = True
     
+    # Auto-accept disclaimer cho user đăng ký thông thường (không qua flow legal)
+    if not hasattr(user, 'disclaimer_accepted'):
+        user.disclaimer_accepted = True
+    
     # Thông báo hoàn tất với hướng dẫn sử dụng
     completion_text = (
         f"🎉 **ĐĂNG KÝ HOÀN TẤT!**\n\n"
@@ -666,8 +670,11 @@ async def process_find(message: types.Message):
         )
         return
     
-    # Kiểm tra disclaimer acceptance
-    if not hasattr(user, 'disclaimer_accepted') or not user.disclaimer_accepted:
+    # Kiểm tra disclaimer acceptance - Auto-accept cho user đăng ký thông thường
+    if not hasattr(user, 'disclaimer_accepted'):
+        user.disclaimer_accepted = True
+    
+    if not user.disclaimer_accepted:
         await message.answer(
             "❌ Bạn cần đồng ý với tuyên bố miễn trừ trách nhiệm trước khi sử dụng dịch vụ.\n"
             "Gõ /start để hoàn tất các bước xác thực."
@@ -855,8 +862,11 @@ async def handle_message(message: types.Message):
         await message.answer("❌ Bạn cần xác nhận tuổi trước khi sử dụng dịch vụ.")
         return
     
-    # Kiểm tra disclaimer acceptance
-    if not hasattr(user, 'disclaimer_accepted') or not user.disclaimer_accepted:
+    # Kiểm tra disclaimer acceptance - Auto-accept cho user đăng ký thông thường
+    if not hasattr(user, 'disclaimer_accepted'):
+        user.disclaimer_accepted = True
+    
+    if not user.disclaimer_accepted:
         await message.answer("❌ Bạn cần đồng ý với tuyên bố miễn trừ trách nhiệm trước khi sử dụng dịch vụ.")
         return
     
