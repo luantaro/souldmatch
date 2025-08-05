@@ -140,7 +140,8 @@ def get_main_menu_keyboard():
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🔍 Tìm người trò chuyện", callback_data="find_chat")],
         [InlineKeyboardButton(text="⚙️ Cài đặt hồ sơ", callback_data="settings")],
-        [InlineKeyboardButton(text="❌ Kết thúc chat", callback_data="stop_chat")]
+        [InlineKeyboardButton(text="❌ Kết thúc chat", callback_data="stop_chat")],
+        [InlineKeyboardButton(text="🗑️ Xóa tài khoản", callback_data="delete_account")]
     ])
     return keyboard
 
@@ -645,45 +646,58 @@ async def cmd_help(message: types.Message):
 
 @dp.callback_query(lambda c: c.data == 'find_chat')
 async def find_chat(callback_query: CallbackQuery):
-    await process_find(callback_query.message)
+    await process_find_callback(callback_query)
 
 @dp.message(Command("find"))
 async def cmd_find(message: types.Message):
-    await process_find(message)
+    await process_find_message(message)
 
-async def process_find(message: types.Message):
-    user_id = message.from_user.id
+async def process_find_callback(callback_query: CallbackQuery):
+    """Xử lý tìm kiếm từ callback"""
+    user_id = callback_query.from_user.id
     
-    if user_id not in users or not users[user_id].is_registered:
-        await message.answer(
-            "❌ Bạn cần đăng ký trước!\nGõ /start để bắt đầu."
-        )
-        return
+    # Tạo user nếu chưa tồn tại
+    if user_id not in users:
+        users[user_id] = User(user_id)
     
     user = users[user_id]
     
-    # Kiểm tra age verification
-    if not user.age_verified:
-        await message.answer(
-            "❌ Bạn cần xác nhận tuổi trước khi sử dụng dịch vụ.",
-            reply_markup=get_age_verification_keyboard()
+    # Kiểm tra registration
+    if not user.is_registered or not user.gender or not user.seeking:
+        await callback_query.message.edit_text(
+            "❌ **Bạn cần hoàn tất đăng ký trước!**\n\n"
+            "Vui lòng đăng ký hồ sơ để bắt đầu.",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🚀 Đăng ký ngay", callback_data="start_register")],
+                [InlineKeyboardButton(text="🔙 Quay lại menu", callback_data="back_menu")]
+            ]),
+            parse_mode='Markdown'
         )
         return
     
-    # Kiểm tra disclaimer acceptance - Auto-accept cho user đăng ký thông thường
+    # Auto-accept disclaimer cho user đã registered
     if not hasattr(user, 'disclaimer_accepted'):
         user.disclaimer_accepted = True
+    if not hasattr(user, 'age_verified'):
+        user.age_verified = True
     
-    if not user.disclaimer_accepted:
-        await message.answer(
-            "❌ Bạn cần đồng ý với tuyên bố miễn trừ trách nhiệm trước khi sử dụng dịch vụ.\n"
-            "Gõ /start để hoàn tất các bước xác thực."
+    # Kiểm tra đang chat
+    if user.partner_id:
+        await callback_query.message.edit_text(
+            "❌ **Bạn đang trong cuộc trò chuyện!**\n\n"
+            "Kết thúc chat hiện tại trước khi tìm người mới.",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="❌ Kết thúc chat", callback_data="stop_chat")],
+                [InlineKeyboardButton(text="🔙 Quay lại menu", callback_data="back_menu")]
+            ]),
+            parse_mode='Markdown'
         )
         return
     
-    if user.partner_id:
-        await message.answer("❌ Bạn đang trong cuộc trò chuyện!")
-        return
+    # Xóa khỏi queue cũ trước
+    for queue in waiting_users.values():
+        if user_id in queue:
+            queue.remove(user_id)
     
     # Xác định queue phù hợp
     queue_key = get_queue_key(user.gender, user.seeking)
@@ -692,24 +706,153 @@ async def process_find(message: types.Message):
     partner_id = find_compatible_partner(user)
     
     if partner_id:
-        # Kết nối
+        # Kết nối thành công
         user.partner_id = partner_id
         users[partner_id].partner_id = user_id
         connections[user_id] = partner_id
         connections[partner_id] = user_id
         
-        # Thông báo kết nối thành công
-        await message.answer("✅ Đã tìm thấy người trò chuyện! Hãy bắt đầu chat nhé! 💬")
+        # Thông báo với emoji và instructions
+        success_msg = (
+            "✅ **ĐÃ TÌM THẤY NGƯỜI TRÒ CHUYỆN!**\n\n"
+            "💬 **Bây giờ bạn có thể:**\n"
+            "• Gửi tin nhắn text\n"
+            "• Gửi hình ảnh 📷\n"
+            "• Gửi voice message 🎤\n"
+            "• Gửi sticker 😄\n\n"
+            "🚫 **Để kết thúc chat:** Nhấn nút bên dưới\n\n"
+            "Hãy bắt đầu trò chuyện nhé! 🎉"
+        )
+        
+        await callback_query.message.edit_text(
+            success_msg, 
+            parse_mode='Markdown',
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="❌ Kết thúc chat", callback_data="stop_chat")]
+            ])
+        )
         await bot.send_message(
             partner_id, 
-            "✅ Đã tìm thấy người trò chuyện! Hãy bắt đầu chat nhé! 💬"
+            success_msg, 
+            parse_mode='Markdown',
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="❌ Kết thúc chat", callback_data="stop_chat")]
+            ])
         )
+        
     else:
         # Thêm vào hàng chờ
         waiting_users[queue_key].append(user_id)
+        
+        waiting_msg = (
+            f"⏳ **ĐANG TÌM KIẾM...**\n\n"
+            f"🎯 **Đang tìm:** {user.seeking}\n"
+            f"📊 **Bạn:** {user.gender}\n\n"
+            f"⏰ **Hệ thống sẽ thông báo khi tìm thấy người phù hợp!**\n\n"
+            f"💡 **Tip:** Chọn 'Bất kỳ' trong cài đặt để tăng cơ hội match!"
+        )
+        
+        await callback_query.message.edit_text(
+            waiting_msg,
+            parse_mode='Markdown',
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="⚙️ Thay đổi sở thích", callback_data="change_seeking")],
+                [InlineKeyboardButton(text="❌ Hủy tìm kiếm", callback_data="cancel_find")]
+            ])
+        )
+
+async def process_find_message(message: types.Message):
+    """Xử lý tìm kiếm từ command message"""
+    user_id = message.from_user.id
+    
+    # Tạo user nếu chưa tồn tại
+    if user_id not in users:
+        users[user_id] = User(user_id)
+    
+    user = users[user_id]
+    
+    # Kiểm tra registration
+    if not user.is_registered or not user.gender or not user.seeking:
         await message.answer(
-            f"⏳ Đang tìm kiếm {user.seeking.lower()}...\n"
-            f"Bạn sẽ được thông báo khi tìm thấy!"
+            "❌ **Bạn cần hoàn tất đăng ký trước!**\n\n"
+            "Vui lòng gõ /start để đăng ký hồ sơ.",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🚀 Đăng ký ngay", callback_data="start_register")]
+            ]),
+            parse_mode='Markdown'
+        )
+        return
+    
+    # Auto-accept disclaimer cho user đã registered
+    if not hasattr(user, 'disclaimer_accepted'):
+        user.disclaimer_accepted = True
+    if not hasattr(user, 'age_verified'):
+        user.age_verified = True
+    
+    # Kiểm tra đang chat
+    if user.partner_id:
+        await message.answer(
+            "❌ **Bạn đang trong cuộc trò chuyện!**\n\n"
+            "Kết thúc chat hiện tại trước khi tìm người mới.",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="❌ Kết thúc chat", callback_data="stop_chat")]
+            ]),
+            parse_mode='Markdown'
+        )
+        return
+    
+    # Xóa khỏi queue cũ trước
+    for queue in waiting_users.values():
+        if user_id in queue:
+            queue.remove(user_id)
+    
+    # Xác định queue phù hợp
+    queue_key = get_queue_key(user.gender, user.seeking)
+    
+    # Tìm partner phù hợp
+    partner_id = find_compatible_partner(user)
+    
+    if partner_id:
+        # Kết nối thành công
+        user.partner_id = partner_id
+        users[partner_id].partner_id = user_id
+        connections[user_id] = partner_id
+        connections[partner_id] = user_id
+        
+        # Thông báo với emoji và instructions
+        success_msg = (
+            "✅ **ĐÃ TÌM THẤY NGƯỜI TRÒ CHUYỆN!**\n\n"
+            "💬 **Bây giờ bạn có thể:**\n"
+            "• Gửi tin nhắn text\n"
+            "• Gửi hình ảnh 📷\n"
+            "• Gửi voice message 🎤\n"
+            "• Gửi sticker 😄\n\n"
+            "🚫 **Để kết thúc chat:** Gõ /stop\n\n"
+            "Hãy bắt đầu trò chuyện nhé! 🎉"
+        )
+        
+        await message.answer(success_msg, parse_mode='Markdown')
+        await bot.send_message(partner_id, success_msg, parse_mode='Markdown')
+        
+    else:
+        # Thêm vào hàng chờ
+        waiting_users[queue_key].append(user_id)
+        
+        waiting_msg = (
+            f"⏳ **ĐANG TÌM KIẾM...**\n\n"
+            f"🎯 **Đang tìm:** {user.seeking}\n"
+            f"📊 **Bạn:** {user.gender}\n\n"
+            f"⏰ **Hệ thống sẽ thông báo khi tìm thấy người phù hợp!**\n\n"
+            f"💡 **Tip:** Chọn 'Bất kỳ' trong cài đặt để tăng cơ hội match!"
+        )
+        
+        await message.answer(
+            waiting_msg,
+            parse_mode='Markdown',
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="⚙️ Thay đổi sở thích", callback_data="change_seeking")],
+                [InlineKeyboardButton(text="❌ Hủy tìm kiếm", callback_data="cancel_find")]
+            ])
         )
 
 def get_queue_key(gender, seeking):
@@ -752,6 +895,105 @@ def is_compatible(user1, user2):
     
     return user1_match and user2_match
 
+@dp.callback_query(lambda c: c.data == 'cancel_find')
+async def cancel_find(callback_query: CallbackQuery):
+    """Hủy tìm kiếm"""
+    user_id = callback_query.from_user.id
+    
+    # Xóa khỏi queue
+    for queue in waiting_users.values():
+        if user_id in queue:
+            queue.remove(user_id)
+    
+    await callback_query.message.edit_text(
+        "❌ **Đã hủy tìm kiếm**\n\n"
+        "Bạn có thể tìm lại bất cứ lúc nào!",
+        reply_markup=get_main_menu_keyboard(),
+        parse_mode='Markdown'
+    )
+
+@dp.callback_query(lambda c: c.data == 'delete_account')
+async def delete_account_confirm(callback_query: CallbackQuery):
+    """Xác nhận xóa tài khoản"""
+    await callback_query.message.edit_text(
+        "⚠️ **XÁC NHẬN XÓA TÀI KHOẢN**\n\n"
+        "🗑️ **Hành động này sẽ:**\n"
+        "• Xóa hoàn toàn hồ sơ của bạn\n"
+        "• Xóa tất cả thông tin cài đặt\n"
+        "• Ngắt kết nối chat hiện tại (nếu có)\n"
+        "• Xóa khỏi hàng chờ tìm kiếm\n\n"
+        "⚡ **KHÔNG THỂ HOÀN TÁC!**\n\n"
+        "❓ **Bạn có chắc chắn muốn xóa tài khoản?**",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="✅ Có, xóa tài khoản", callback_data="confirm_delete")],
+            [InlineKeyboardButton(text="❌ Không, giữ lại", callback_data="cancel_delete")]
+        ]),
+        parse_mode='Markdown'
+    )
+
+@dp.callback_query(lambda c: c.data == 'confirm_delete')
+async def confirm_delete_account(callback_query: CallbackQuery):
+    """Thực hiện xóa tài khoản"""
+    user_id = callback_query.from_user.id
+    
+    if user_id in users:
+        user = users[user_id]
+        
+        # Ngắt kết nối chat nếu đang có
+        if user.partner_id:
+            partner_id = user.partner_id
+            try:
+                await bot.send_message(
+                    partner_id,
+                    "💔 **Cuộc trò chuyện đã kết thúc**\n\n"
+                    "Đối phương đã xóa tài khoản.",
+                    parse_mode='Markdown'
+                )
+                # Reset partner
+                users[partner_id].partner_id = None
+                if partner_id in connections:
+                    del connections[partner_id]
+            except Exception:
+                pass
+        
+        # Xóa khỏi hàng chờ
+        for queue in waiting_users.values():
+            if user_id in queue:
+                queue.remove(user_id)
+        
+        # Xóa user và connections
+        del users[user_id]
+        if user_id in connections:
+            del connections[user_id]
+    
+    await callback_query.message.edit_text(
+        "✅ **TÀI KHOẢN ĐÃ ĐƯỢC XÓA**\n\n"
+        "🗑️ **Đã xóa:**\n"
+        "• Toàn bộ hồ sơ cá nhân\n"
+        "• Tất cả cài đặt\n"
+        "• Lịch sử kết nối\n\n"
+        "👋 **Cảm ơn bạn đã sử dụng SoulMatch!**\n\n"
+        "💡 **Muốn sử dụng lại?**\n"
+        "Gõ /start để tạo tài khoản mới bất cứ lúc nào.",
+        parse_mode='Markdown'
+    )
+
+@dp.callback_query(lambda c: c.data == 'cancel_delete')
+async def cancel_delete_account(callback_query: CallbackQuery):
+    """Hủy xóa tài khoản"""
+    user_id = callback_query.from_user.id
+    user = users[user_id]
+    
+    await callback_query.message.edit_text(
+        f"✅ **ĐÃ HỦY XÓA TÀI KHOẢN**\n\n"
+        f"🏠 **Quay lại menu chính**\n\n"
+        f"📋 **Hồ sơ của bạn:**\n"
+        f"• Giới tính: {user.gender}\n"
+        f"• Tìm kiếm: {user.seeking}",
+        reply_markup=get_main_menu_keyboard(),
+        parse_mode='Markdown'
+    )
+
 @dp.callback_query(lambda c: c.data == 'stop_chat')
 async def stop_chat_callback(callback_query: CallbackQuery):
     await process_stop(callback_query.message)
@@ -764,6 +1006,12 @@ async def process_stop(message: types.Message):
     user_id = message.from_user.id
     
     if user_id not in users:
+        await message.answer(
+            "❌ **Bạn chưa đăng ký**\n\n"
+            "Gõ /start để bắt đầu!",
+            reply_markup=get_main_menu_keyboard(),
+            parse_mode='Markdown'
+        )
         return
     
     user = users[user_id]
@@ -773,10 +1021,18 @@ async def process_stop(message: types.Message):
         if user_id in queue:
             queue.remove(user_id)
     
-    # Ngắt kết nối
+    # Ngắt kết nối chat nếu đang có
     if user.partner_id:
         partner_id = user.partner_id
-        await bot.send_message(partner_id, "💔 Người kia đã kết thúc cuộc trò chuyện.")
+        try:
+            await bot.send_message(
+                partner_id,
+                "💔 **Cuộc trò chuyện đã kết thúc**\n\n"
+                "Đối phương đã kết thúc chat.",
+                parse_mode='Markdown'
+            )
+        except Exception:
+            pass
         
         # Reset partner
         users[partner_id].partner_id = None
@@ -788,9 +1044,19 @@ async def process_stop(message: types.Message):
         if partner_id in connections:
             del connections[partner_id]
         
-        await message.answer("✅ Đã kết thúc cuộc trò chuyện.", reply_markup=get_main_menu_keyboard())
+        await message.answer(
+            "✅ **Đã kết thúc cuộc trò chuyện**\n\n"
+            "💡 Bạn có thể tìm người khác để trò chuyện!",
+            reply_markup=get_main_menu_keyboard(),
+            parse_mode='Markdown'
+        )
     else:
-        await message.answer("❌ Bạn không đang trong cuộc trò chuyện nào.")
+        await message.answer(
+            "❌ **Bạn không đang trong cuộc trò chuyện**\n\n"
+            "Hãy tìm người để bắt đầu chat!",
+            reply_markup=get_main_menu_keyboard(),
+            parse_mode='Markdown'
+        )
 
 @dp.callback_query(lambda c: c.data == 'settings')
 async def settings_callback(callback_query: CallbackQuery):
@@ -849,17 +1115,27 @@ async def back_menu(callback_query: CallbackQuery):
 
 @dp.message()
 async def handle_message(message: types.Message):
+    """Xử lý tin nhắn chat"""
     user_id = message.from_user.id
     
     if user_id not in users:
-        await message.answer("❌ Gõ /start để bắt đầu!")
+        await message.answer(
+            "❌ **Bạn chưa đăng ký**\n\n"
+            "Gõ /start để bắt đầu!",
+            reply_markup=get_main_menu_keyboard(),
+            parse_mode='Markdown'
+        )
         return
     
     user = users[user_id]
     
     # Kiểm tra age verification
     if not user.age_verified:
-        await message.answer("❌ Bạn cần xác nhận tuổi trước khi sử dụng dịch vụ.")
+        await message.answer(
+            "❌ **Chưa xác nhận tuổi**\n\n"
+            "Bạn cần xác nhận tuổi trước khi sử dụng dịch vụ.",
+            parse_mode='Markdown'
+        )
         return
     
     # Kiểm tra disclaimer acceptance - Auto-accept cho user đăng ký thông thường
@@ -867,7 +1143,11 @@ async def handle_message(message: types.Message):
         user.disclaimer_accepted = True
     
     if not user.disclaimer_accepted:
-        await message.answer("❌ Bạn cần đồng ý với tuyên bố miễn trừ trách nhiệm trước khi sử dụng dịch vụ.")
+        await message.answer(
+            "❌ **Chưa đồng ý điều khoản**\n\n"
+            "Bạn cần đồng ý với tuyên bố miễn trừ trách nhiệm trước khi sử dụng dịch vụ.",
+            parse_mode='Markdown'
+        )
         return
     
     # Kiểm tra content filtering cho trẻ em
@@ -875,22 +1155,100 @@ async def handle_message(message: types.Message):
         return  # Đã bị chặn, không xử lý tiếp
     
     if not user.partner_id:
-        await message.answer("❌ Bạn chưa được kết nối với ai. Gõ /find để tìm kiếm!")
+        await message.answer(
+            "❌ **Bạn chưa kết nối với ai**\n\n"
+            "Hãy tìm người để trò chuyện trước!",
+            reply_markup=get_main_menu_keyboard(),
+            parse_mode='Markdown'
+        )
+        return
+    
+    # Kiểm tra partner có còn online không
+    partner_id = user.partner_id
+    if partner_id not in users or users[partner_id].partner_id != user_id:
+        # Partner đã ngắt kết nối
+        user.partner_id = None
+        if user_id in connections:
+            del connections[user_id]
+        
+        await message.answer(
+            "💔 **Đối phương đã ngắt kết nối**\n\n"
+            "Cuộc trò chuyện đã kết thúc.",
+            reply_markup=get_main_menu_keyboard(),
+            parse_mode='Markdown'
+        )
         return
     
     # Chuyển tiếp tin nhắn
     try:
+        # Kiểm tra nội dung tin nhắn có phù hợp không
+        content = message.text or message.caption or ""
+        
+        # Kiểm tra từ khóa không phù hợp
+        inappropriate_keywords = ['sex', 'nude', 'naked', 'porn', 'xxx', 'địt', 'đụ', 'lồn', 'cu', 'cặc']
+        if any(keyword in content.lower() for keyword in inappropriate_keywords):
+            await message.answer(
+                "⚠️ **Nội dung không phù hợp**\n\n"
+                "Vui lòng giữ cuộc trò chuyện lành mạnh!",
+                parse_mode='Markdown'
+            )
+            return
+        
+        # Chuyển tiếp tin nhắn cho đối phương
         if message.text:
-            await bot.send_message(user.partner_id, message.text)
+            await bot.send_message(
+                partner_id,
+                f"💬 **Đối phương**: {message.text}",
+                parse_mode='Markdown'
+            )
         elif message.photo:
-            await bot.send_photo(user.partner_id, message.photo[-1].file_id, caption=message.caption)
-        elif message.voice:
-            await bot.send_voice(user.partner_id, message.voice.file_id)
+            await bot.send_photo(
+                partner_id,
+                message.photo[-1].file_id,
+                caption=f"📸 **Đối phương đã gửi ảnh**{': ' + message.caption if message.caption else ''}",
+                parse_mode='Markdown'
+            )
         elif message.sticker:
-            await bot.send_sticker(user.partner_id, message.sticker.file_id)
-        # Thêm các loại tin nhắn khác nếu cần
+            await bot.send_sticker(partner_id, message.sticker.file_id)
+            await bot.send_message(
+                partner_id,
+                "🎭 **Đối phương đã gửi sticker**",
+                parse_mode='Markdown'
+            )
+        elif message.voice:
+            await bot.send_voice(
+                partner_id,
+                message.voice.file_id,
+                caption="🎤 **Đối phương đã gửi tin nhắn thoại**",
+                parse_mode='Markdown'
+            )
+        elif message.video_note:
+            await bot.send_video_note(partner_id, message.video_note.file_id)
+            await bot.send_message(
+                partner_id,
+                "📹 **Đối phương đã gửi video tròn**",
+                parse_mode='Markdown'
+            )
+        else:
+            await bot.send_message(
+                partner_id,
+                "📎 **Đối phương đã gửi một tệp**",
+                parse_mode='Markdown'
+            )
+        
+        # Thêm emoji phản hồi để người gửi biết tin nhắn đã được chuyển
+        try:
+            await message.react("✅")
+        except Exception:
+            pass  # Không phải tất cả chat đều hỗ trợ react
+        
     except Exception as e:
-        await message.answer("❌ Không thể gửi tin nhắn!")
+        logging.error(f"Error forwarding message from {user_id} to {partner_id}: {e}")
+        await message.answer(
+            "❌ **Lỗi gửi tin nhắn**\n\n"
+            "Không thể gửi tin nhắn. Vui lòng thử lại!",
+            parse_mode='Markdown'
+        )
 
 async def main():
     await dp.start_polling(bot)
